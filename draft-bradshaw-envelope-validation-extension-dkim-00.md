@@ -55,6 +55,8 @@ DKIM signers add and sign the eve headers, including the eve headers added by pr
 
 Eve aware validators check the envelope addresses of received mail against all DKIM signatures present, and add the eve status of each signature in the authentication results entry for that signature. This is then used to determine which signatures have been verified against the envelope details and which have not, and are therefore vulnerable to replay, or may have been forwarded by an intermediary. The receiver can then apply domain reputation based on a validated path, and can avoid applying domain reputation of a domain which is the victim of a DKIM replay attack.
 
+# Generating EVE headers.
+
 DKIM eve headers are added in sets, a set of eve headers is referred to as an eve assertion set. An eve assertion set consists of exactly 1 eve assertion set marker header, and 1 or more eve assertion hash headers. Both of these headers are added as DKIM-EVE headers, this allows us to use the header ordering present in DKIM to treat each set as a single signed unit.
 
 DKIM-EVE headers MUST be signed by 1 or more DKIM signatures, they MUST NOT be oversigned, this allows for intermediaries to continue the EVE chain without breaking the original DKIM signature. The breaks provided by the EVE assertion header prevents the new signer asserting validation of the original envelope details
