@@ -22,7 +22,7 @@ author:
 
 --- abstract
 
-DKIM ({{?RFC6376}}) is an IETF standard of cryptographically signing email with a domain key.  DKIM is widely used to build a reputation based on the signing domain and assign that reputation to message filtering.  Section 8.6 defines a vulnerability called DKIM replay, in which a single message can be replayed to a large group of unrelated recipients, thereby hijacking the reputation of the original sender.  This proposal defines a method of declaring the original envelope sender and recipient(s) within a DKIM signature such that compliant DKIM validators can detect a DKIM signature which may have been replayed and modify their use of domain reputation accordingly. This technique remains fully backwards compatible with DKIM validators which do not support the new methods, while allowing compliant forwarders to declare their ingress authentication state in Authentication Results (RFC7601) headers for consumption by subsequent validators.
+DKIM ({{?RFC6376}}) is an IETF standard of cryptographically signing email with a domain key.  DKIM is widely used to build a reputation based on the signing domain and assign that reputation to message filtering.  Section 8.6 defines a vulnerability called DKIM replay, in which a single message can be replayed to a large group of unrelated recipients, thereby hijacking the reputation of the original sender.  This proposal defines a method of declaring the original envelope sender and recipient(s) within a DKIM signature such that compliant DKIM validators can detect a DKIM signature which may have been replayed and modify their use of domain reputation accordingly. This technique remains fully backwards compatible with DKIM validators which do not support the new methods, while allowing compliant forwarders to declare their ingress authentication state in Authentication Results {{{?RFC8601}}} headers for consumption by subsequent validators.
 
 --- middle
 
@@ -93,7 +93,7 @@ Using the eve version and unique id from the eve assertion header, generate a ne
 
 Check the set of eve hashes in the current assertion set. If there is a valid eve hash present for every envelope to address in the SMTP transaction then the eve result is pass. If there are no matches, or matches for only a subset of addresses, then the eve result for this signature is FAIL.
 
-If this signature makes no eve assertion then the eve result is none. Authenticators may choose to record this in the Authentication-Results DKIM results as eve=none, or may choose to omit this entirely.
+If this signature makes no eve assertion then the eve result is none. Authenticators may choose to record this in the Authentication-Results DKIM results as smtp.eve=none, or may choose to omit this entirely.
 
 if a unique id is repeated within a group of eve assertion sets then a receiver MAY consider the most recently duplicated set invalid.
 
@@ -103,9 +103,9 @@ Message originates at sender.com, is sent by user@sender.com to bob@example.com 
 
 Intermediate.com forwards this message on to sue@recipient.com using the envelope sender address bounces@intermediate.com
 
-recipient.com is able to determine that the DKIM signature for sender.com is valid, but does not assert the envelope addresses as received, an eve=fail status is applied to this signature.
+recipient.com is able to determine that the DKIM signature for sender.com is valid, but does not assert the envelope addresses as received, an smtp.eve=fail status is applied to this signature.
 
-recipient.com is able to validate that the DKIM signature for intermediate.com is valid, and does assert the envelope addresses received, an eve=pass status is applied to this signature.
+recipient.com is able to validate that the DKIM signature for intermediate.com is valid, and does assert the envelope addresses received, an smtp.eve=pass status is applied to this signature.
 
 The reputation engine for recipient.com considers the eve status of DKIM signatures when applying domain reputation to the message. It notes that the signature for sender.com does not assert validity of the envelope addresses, and checks for other relevant signatures.
 
@@ -113,15 +113,17 @@ The signature for intermediate.com is found with a valid assertion, and the repu
 
 ~~~~
 Authentication-Results: reciever.net; dkim=pass header.d=example.com
-  header.a=rsa-sha256 header.s=foo eve=fail; dkim=pass
-  header.d=intermediate.com header.a=rsa-sha256 header.s=bar eve=pass
+  header.a=rsa-sha256 header.s=foo smtp.eve=fail; dkim=pass
+  header.d=intermediate.com header.a=rsa-sha256 header.s=bar
+  smtp.eve=pass
 DKIM-Signature: v=1; a=rsa-sha256; d=intermediate.com; s=foo;
   h=dkim-eve,dkim-eve,dkim-eve,dkim-eve, etc
 DKIM-EVE:
   <92570938870d5d03c444616ed79e4a2fe782d032bd23dc93aad4c3afe3a8add8>
 DKIM-EVE: v=1;iddhwhnqwe
 Authentication-Results: intermediate.com; dkim=pass
-  header.d=sender.com header.a=rsa-sha256 header.s=foo eve=pass
+  header.d=sender.com header.a=rsa-sha256 header.s=foo
+  smtp.eve=pass
 DKIM-Signature: v=1; a=rsa-sha256; d=sender.com; s=foo;
   h=dkim-eve,dkim-eve, etc
 DKIM-EVE:
@@ -152,13 +154,6 @@ Resulting in the following hash string
 `92570938870d5d03c444616ed79e4a2fe782d032bd23dc93aad4c3afe3a8add8`
 
 Recipient.com uses the eve-id and envelope set set by Intermediate.com to generate the eve hash used to check. As this matches the data used by Intermediate.com the hash is identical, and eve passes for this hop.
-
-# Privacy Considerations
-
-Envelope sender and recipient addresses are hashed, reducing the likelyhood of those addresses being leaked to downstream participants in the chain. It is expected that many of these addresses are already present in other headers such as From, To, and Received, however this is considered out of scope for this draft.
-
-Each participant sets a unique eve id, thus hashes for like addresses will not produce identical trackable eve hashes over time.
-
 # Declination to participate.
 
 A sender who intends to decline to participate may do so be adding a DKIM-EVE: header with a version of 0 and an ID of decline. These messages should be treated as though no EVE headers are present. Intermediaries may add further EVE headers as they process mail, however the intent of the original sender SHOULD be considered by the final recipient system.
@@ -176,6 +171,34 @@ eve is intended to tie the DKIM signatures, and so the reputation of DKIM domain
 When eve is asserted for a message, a receiver using DKIM domains as a reputation anchor may choose to modify which DKIM domain is used as a reputation anchor when eve indicates that the message has been forwarded, as this may indicate a possible replay attack.
 
 Intermediaries participating in eve may re-sign messages with their own DKIM signatures, and so indicate that they take responsibility for the content they are forwarding. Receivers may choose to use the DKIM domain of the forwarding system as a reputation anchor in this case.
+
+# Privacy Considerations
+
+Envelope sender and recipient addresses are hashed, reducing the likelyhood of those addresses being leaked to downstream participants in the chain. It is expected that many of these addresses are already present in other headers such as From, To, and Received, however this is considered out of scope for this draft.
+
+Each participant sets a unique eve id, thus hashes for like addresses will not produce identical trackable eve hashes over time.
+
+# Security Considerations
+
+The security considerations of {{{?RFC6376}}} also apply to this extension.
+
+Implementors MAY consider implementing limits to the number of hashes generated for emails sent or received with a large number of envelope addresses in order to avoid resource issues.
+
+Senders MAY choose to explode messages to multiple recipients before DKIM signing, such that they are adding only a single eve hash per message.
+
+# IANA Considerations
+
+IANA is requested to add the following item to the "Email Authentication Results Method Name Registry"
+
+Method: dkim
+
+Defined: TBC
+
+ptype: smtp
+
+property: eve
+
+value: "pass", "fail", or "none"
 
 # Notes
 
