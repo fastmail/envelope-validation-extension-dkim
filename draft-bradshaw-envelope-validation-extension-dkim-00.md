@@ -22,7 +22,7 @@ author:
 
 --- abstract
 
-DKIM ({{?RFC6376}}) is an IETF standard of cryptographically signing email with a domain key.  DKIM is widely used to build a reputation based on the signing domain and assign that reputation to message filtering.  Section 8.6 defines a vulnerability called DKIM replay, in which a single message can be replayed to a large group of unrelated recipients, thereby hijacking the reputation of the original sender.  This proposal defines a method of declaring the original envelope sender and recipient(s) within a DKIM signature such that compliant DKIM validators can detect a DKIM signature which may have been replayed and modify their use of domain reputation accordingly. This technique remains fully backwards compatible with DKIM validators which do not support the new methods, while allowing compliant forwarders to declare their ingress authentication state in Authentication Results {{{?RFC8601}}} headers for consumption by subsequent validators.
+DKIM ({{?RFC6376}}) is an IETF standard of cryptographically signing email with a domain key.  DKIM is widely used to build a reputation based on the signing domain and assign that reputation to message filtering.  Section 8.6 defines a vulnerability called DKIM replay, in which a single message can be replayed to a large group of unrelated recipients, thereby hijacking the reputation of the original sender.  This proposal defines a method of declaring the original envelope sender and recipient(s) within a DKIM signature such that compliant DKIM validators can detect a DKIM signature which may have been replayed and modify their use of domain reputation accordingly. This technique remains fully backwards compatible with DKIM validators which do not support the new methods, while allowing compliant forwarders to declare their ingress authentication state in Authentication Results ({{?RFC8601}}) headers for consumption by subsequent validators.
 
 --- middle
 
@@ -180,7 +180,7 @@ Each participant sets a unique eve id, thus hashes for like addresses will not p
 
 # Security Considerations
 
-The security considerations of {{{?RFC6376}}} also apply to this extension.
+The security considerations of ({{?RFC6376}}) also apply to this extension.
 
 Implementors MAY consider implementing limits to the number of hashes generated for emails sent or received with a large number of envelope addresses in order to avoid resource issues.
 
